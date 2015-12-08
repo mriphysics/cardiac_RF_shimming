@@ -131,12 +131,12 @@ table(Percent_Diff_PO,SAR_Percent_Diff_PO)
 figure
 scale = [0 1.4*b1_amp];
 subplot(121)
-imagesc(flipud(abs(sum(tx,3))*Quad_PO_drive),scale);axis off
+imagesc(abs(sum(tx,3)*Quad_PO_drive),scale);axis off
 title('Quadrature')
 colorbar('southoutside')
 
 subplot(122)
-imagesc(flipud(abs(solnFin)),scale);axis off
+imagesc(abs(solnFin),scale);axis off
 title('CVX Shim')
 colorbar('southoutside')
 
