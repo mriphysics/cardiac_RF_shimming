@@ -6,7 +6,7 @@
 % This code is free under the terms of the MIT license.
 
 function [fval] = optim_MSE(P_A,Ap,Amask,...
-                        VOP,QG,targmask,idx,b1_act_scale,Nc,t_enc)
+                VOP,QG,targmask,idx,b1_act_scale,Nc,t_enc,lSARmax,wbSARmax)
 
 % Load in MLS phase distribution and counter
 zt = load('z_tmp'); z = zt.z; counter = zt.counter;
@@ -41,9 +41,9 @@ while (abs(norm(mls_shim - mlsinit)) > 0.1)
          variable y(Nc) complex;
          minimise(norm(AA*y - T.*z));
          subject to           
-            (y'*QG*y)*S <= 4;           % Global SAR Constraint
-            SAR(y,VOP)*S <= (10 + 0i);  % Local SAR Constraint
-            max(abs(y)) <= D;           % Power constraint
+            (y'*QG*y)*S <= wbSARmax;           % Global SAR Constraint
+            SAR(y,VOP)*S <= (lSARmax + 0i);    % Local SAR Constraint
+            max(abs(y)) <= D;                  % Power constraint
     cvx_end
 
     mls_shim = y;
@@ -71,7 +71,7 @@ counter = 1;
 
 % Plot bias convergence
 Bias_conv = [zt.Bias_conv Bias];
-plot(Bias_conv)
+plot(Bias_conv);xlabel('Iteration');ylabel('Percentage Bias')
 drawnow;hold on
 plot([0 length(Bias_conv)+1],[5 5],'--k')
 

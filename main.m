@@ -19,6 +19,8 @@ nom = 60;           % Nominal flip angle (degrees)
 
 %%%%%%%%%%%%%%%%%%%%%%%% Parameters %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 t_enc = 1.7;        % Read-out duration (ms)
+lSARmax = 10;       % Local SAR constraint (W/kg)
+wbSARmax = 4;       % Whole-body SAR constraint (W/kg)
 
 
 %% Scale fields and create ROI indices
@@ -54,7 +56,7 @@ z = exp(1i*(angle(A_tmpz(idx))));
 counter = 0;
 Bias_conv = [];
 
-% Save variables passed between function calls of optimsation
+% Save variables passed between function calls of optimisation
 save('z_tmp','z','counter','Bias_conv')
 
 % Select optimisation to run
@@ -65,15 +67,16 @@ opt_sel = questdlg('Select Optimization','Select Optimization',...
 switch opt_sel
 case 'MSE'
 tic
-options =optimset('Display','iter','MaxIter',inf,'tolfun',0.1,'tolx',0.01);
+options = optimset('Display','iter','MaxIter',inf,'tolfun',0.1,'tolx',0.1);
 [PA_shim,f_val] = fminsearch(@(PA_optim) optim_MSE(PA_optim,A,Amask,VOP,...
-                  QG,targmask,idx,b1_act_scale,Nc,t_enc),PA_optim,options);
+QG,targmask,idx,b1_act_scale,Nc,t_enc,lSARmax,wbSARmax),PA_optim,options);
 toc
 case 'Minimum Bias'
 tic
-options =optimset('Display','iter','MaxIter',inf,'tolfun',0.1,'tolx',0.01);
+options = optimset('Display','iter','MaxIter',inf,'tolfun',0.1,'tolx',0.1);
 [PA_shim,f_val] = fminsearch(@(PA_optim) optim_minBias(PA_optim,A,Amask,...
-              VOP,QG,targmask,idx,b1_act_scale,Nc,t_enc),PA_optim,options);
+VOP,QG,targmask,idx,b1_act_scale,Nc,t_enc,lSARmax,wbSARmax),PA_optim,...
+                    options);
 toc
 end
 %%%%%%%%%%%%%%%%%%%%%%
@@ -113,14 +116,13 @@ Quad_PO_drive = 1/mean(abs(quad_map(idx)));
 
 parfor ii=1:length(PAs)
 
-    b1_ampt = PAs(ii);
-    
+    b1_ampt = PAs(ii);  
     b1_act_scale_q(ii) = (mean(abs(quad_map(idx_quad))))^2*...
                     ((PAs(ii)*Quad_PO_drive)^2)*T_rms(ii)/TRs(ii);
 
     % Calculate Quad TR to conform to SAR limits
-    Quad_SAR_TR4 = Quad_Local_SAR*b1_act_scale_q(ii);
-    TR_new(ii)=round(Quad_SAR_TR4/10*TRs(ii)*100)/100;TR_unc(ii)=TR_new(ii);
+    Quad_SAR = Quad_Local_SAR*b1_act_scale_q(ii);
+    TR_new(ii)=round(Quad_SAR/10*TRs(ii)*100)/100;TR_unc(ii)=TR_new(ii);
     if TR_new(ii) < TRs(ii); TR_new(ii) = TRs(ii); end
     
     % Calculate Quadrature Error
@@ -128,7 +130,7 @@ parfor ii=1:length(PAs)
         ones(length(idx),1)*b1_ampt))/norm(ones(length(idx),1)*b1_ampt);
 
     % Calculate Quadrature Bias
-    Quadrature_Bias(ii) = abs(b1_ampt - mean(abs(quad_map(idx))*PAs(ii))*...
+    Quadrature_Bias(ii) = abs(b1_ampt-mean(abs(quad_map(idx))*PAs(ii))*...
                             Quad_PO_drive)/b1_ampt*100;
     % Quadrature Variance
     Quadrature_Var(ii) = var(abs(quad_map(idx)*PAs(ii))*Quad_PO_drive,1);
@@ -161,7 +163,7 @@ Quadrature_SAR = abs([Quad_Local_SAR; ((ones(Nc,1))'*QG*(ones(Nc,1)))])...
 Shimmed_SAR = abs([SAR_par(VOP,shim); (shim'*QG*shim)])*S;
 
 TR_all = [TR_quad TR_shim];
-disp(table(Quadrature_SAR,Shimmed_SAR,'RowNames',{'Torso','Global'}));
+disp(table(Quadrature_SAR,Shimmed_SAR,'RowNames',{'Torso','Whole Body'}));
 
 Shimmed_Error = Error;
 Percent_Diff = (Quadrature_Error-Shimmed_Error)/Quadrature_Error*100;
@@ -169,16 +171,15 @@ Percent_Diff = (Quadrature_Error-Shimmed_Error)/Quadrature_Error*100;
 disp(table(Quadrature_Error,Shimmed_Error,Percent_Diff,TR_all))
 
 % Shimmed solution against unshimmed
+figure
 subplot(121)
-imagesc(abs(sum(tx,3))*PA_quad.*M_quad*Quad_PO_drive(ind_quad),...
-[0 1.3*PA_quad]);axis off
-title('Quadrature')
-colorbar('southoutside')
+imagesc(abs(sum(tx,3))*PA_quad.*M_quad*Quad_PO_drive,...
+[0 1.3*PA_quad]);axis off image
+title('Quadrature'); h=colorbar('southoutside'); xlabel(h,'\muT')
 
 subplot(122)
-imagesc(abs(solnFin).*M_quad,[0 1.3*PA_shim]);axis off
-title('Shimmed')
-colorbar('southoutside')
+imagesc(abs(solnFin).*M_quad,[0 1.3*PA_shim]);axis off image
+title('Shimmed'); h=colorbar('southoutside'); xlabel(h,'\muT')
 
 %% Stats
 cov_quad = sqrt(Quadrature_Var(ind_quad))/PAs(ind_quad);
