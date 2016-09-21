@@ -5,8 +5,8 @@
 %
 % This code is free under the terms of the MIT license.
 
-function [fval] = optim_minBias(P_A,Ap,Amask,...
-                VOP,QG,targmask,idx,b1_act_scale,Nc,t_enc,lSARmax,wbSARmax)
+function [fval] = optim_minBias(P_A,Ap,Amask,VOP,QG,targmask,idx,...
+            b1_act_scale,Nc,t_enc,lSARmax,wbSARmax,delta_1,delta_2,theta)
 
 % Load in MLS phase distribution and counter
 zt = load('z_tmp'); z = zt.z; counter = zt.counter;
@@ -16,7 +16,7 @@ AA = Amask * P_A;
 T = P_A;
 
 % Compute pulse duration, RMS duration and TR
-[~,rf_dur,t_rms] = SSFP_calc_duty_cycle(P_A);
+[rf_dur,t_rms] = SSFP_pulse_params(P_A,theta,delta_1,delta_2);
 TR = max([rf_dur*2 rf_dur+t_enc]);
 
 % SAR Scaling
