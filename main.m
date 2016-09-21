@@ -2,7 +2,7 @@
 % with simulated VOPs and a global Q-matrix to allow optimisation for a
 % fixed pulse amplitude cardiac imaging sequence to be run.
 %
-% Created by Arian Beqiri, King's College London, December 2015.
+% Created by Arian Beqiri, King's College London, September 2016.
 % Email: arian.beqiri@kcl.ac.uk
 %
 % This code is free under the terms of the MIT license.
@@ -16,7 +16,10 @@ N = size(tx,1);     % Size of grid
 Nc = size(tx,3);    % Number of coils
 
 nom = 60;           % Nominal flip angle (degrees)
+
+%%%%%%%%%%%%%%%%%%%%%%%% Parameters %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 t_enc = 1.7;        % Read-out duration (ms)
+
 
 %% Scale fields and create ROI indices
 
@@ -64,13 +67,13 @@ case 'MSE'
 tic
 options =optimset('Display','iter','MaxIter',inf,'tolfun',0.1,'tolx',0.01);
 [PA_shim,f_val] = fminsearch(@(PA_optim) optim_MSE(PA_optim,A,Amask,VOP,...
-                    QG,targmask,idx,b1_act_scale,Nc),PA_optim,options);
+                  QG,targmask,idx,b1_act_scale,Nc,t_enc),PA_optim,options);
 toc
 case 'Minimum Bias'
 tic
 options =optimset('Display','iter','MaxIter',inf,'tolfun',0.1,'tolx',0.01);
 [PA_shim,f_val] = fminsearch(@(PA_optim) optim_minBias(PA_optim,A,Amask,...
-                VOP,QG,targmask,idx,b1_act_scale,Nc),PA_optim,options);
+              VOP,QG,targmask,idx,b1_act_scale,Nc,t_enc),PA_optim,options);
 toc
 end
 %%%%%%%%%%%%%%%%%%%%%%
@@ -103,18 +106,17 @@ parfor ii=1:length(PAs)
 end
 
 TR_new = zeros(length(PAs),1); TR_unc = TR_new; Quadrature_Bias = TR_new;
-Quadrature_E = TR_new; Quad_PO_drive = TR_new;
-b1_act_scale_q = TR_new; Quadrature_Var = TR_new;
+Quadrature_E = TR_new; b1_act_scale_q = TR_new; Quadrature_Var = TR_new;
+
+% Find appropriate PO drive
+Quad_PO_drive = 1/mean(abs(quad_map(idx)));
 
 parfor ii=1:length(PAs)
 
-    % Find appropriate PO drive
     b1_ampt = PAs(ii);
-    Quad_PO_drive_unc = 1/mean(abs(quad_map(idx)));
-    Quad_PO_drive(ii) = Quad_PO_drive_unc;
     
     b1_act_scale_q(ii) = (mean(abs(quad_map(idx_quad))))^2*...
-                    ((PAs(ii)*Quad_PO_drive(ii))^2)*T_rms(ii)/TRs(ii);
+                    ((PAs(ii)*Quad_PO_drive)^2)*T_rms(ii)/TRs(ii);
 
     % Calculate Quad TR to conform to SAR limits
     Quad_SAR_TR4 = Quad_Local_SAR*b1_act_scale_q(ii);
@@ -122,14 +124,14 @@ parfor ii=1:length(PAs)
     if TR_new(ii) < TRs(ii); TR_new(ii) = TRs(ii); end
     
     % Calculate Quadrature Error
-    Quadrature_E(ii) = norm((abs(quad_map(idx)*Quad_PO_drive(ii)*PAs(ii))-...
+    Quadrature_E(ii) = norm((abs(quad_map(idx)*Quad_PO_drive*PAs(ii))-...
         ones(length(idx),1)*b1_ampt))/norm(ones(length(idx),1)*b1_ampt);
 
     % Calculate Quadrature Bias
     Quadrature_Bias(ii) = abs(b1_ampt - mean(abs(quad_map(idx))*PAs(ii))*...
-                            Quad_PO_drive(ii))/b1_ampt*100;
+                            Quad_PO_drive)/b1_ampt*100;
     % Quadrature Variance
-    Quadrature_Var(ii) = var(abs(quad_map(idx)*PAs(ii))*Quad_PO_drive(ii),1);
+    Quadrature_Var(ii) = var(abs(quad_map(idx)*PAs(ii))*Quad_PO_drive,1);
 end
 
 figure
@@ -175,7 +177,7 @@ colorbar('southoutside')
 
 subplot(122)
 imagesc(abs(solnFin).*M_quad,[0 1.3*PA_shim]);axis off
-title('CVX Shim')
+title('Shimmed')
 colorbar('southoutside')
 
 %% Stats

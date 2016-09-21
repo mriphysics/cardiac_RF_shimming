@@ -1,5 +1,12 @@
+% Mean Squared Error cost function
+%
+% Created by Arian Beqiri, King's College London, September 2016.
+% Email: arian.beqiri@kcl.ac.uk
+%
+% This code is free under the terms of the MIT license.
+
 function [fval] = optim_MSE(P_A,Ap,Amask,...
-                        VOP,QG,targmask,idx,b1_act_scale,Nc)
+                        VOP,QG,targmask,idx,b1_act_scale,Nc,t_enc)
 
 % Load in MLS phase distribution and counter
 zt = load('z_tmp'); z = zt.z; counter = zt.counter;
@@ -10,7 +17,7 @@ T = targmask*P_A;
 
 % Compute pulse duration, RMS duration and TR
 [~,rf_dur,t_rms] = SSFP_calc_duty_cycle(P_A);
-TR = max([rf_dur*2 rf_dur+1.7]);
+TR = max([rf_dur*2 rf_dur+t_enc]);
 
 % SAR Scaling
 S = b1_act_scale*(P_A^2)*t_rms/TR;
