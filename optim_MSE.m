@@ -6,7 +6,8 @@
 % This code is free under the terms of the MIT license.
 
 function [fval] = optim_MSE(P_A,Ap,Amask,VOP,QG,targmask,idx,...
-              b1_act_scale,Nc,t_enc,lSARmax,wbSARmax,delta_1,delta_2,theta)
+                 b1_act_scale,Nc,t_enc,lSARmax,wbSARmax,delta_1,delta_2,...
+                 theta,A_amp,P_av,P_peak)
 
 % Load in MLS phase distribution and counter
 zt = load('z_tmp'); z = zt.z; counter = zt.counter;
@@ -23,8 +24,8 @@ TR = max([rf_dur*2 rf_dur+t_enc]);
 S = b1_act_scale*(P_A^2)*t_rms/TR;
 
 % Peak and average power drive constraints
-drmax = 20/P_A;
-dravg = sqrt(100*TR/((P_A.^2*t_rms)*2.25));
+drmax = (sqrt(P_peak/A_amp))/P_A;
+dravg = sqrt(P_av*TR/((P_A.^2*t_rms)*A_amp));
 
 % Most constraining power constraint
 D = min([drmax dravg]);
@@ -71,7 +72,7 @@ counter = 1;
 
 % Plot bias convergence
 Bias_conv = [zt.Bias_conv Bias];
-plot(Bias_conv);xlabel('Iteration');ylabel('Percentage Bias')
+plot(Bias_conv);xlabel('Iteration');ylabel('Percentage Bias');grid on
 drawnow;hold on
 plot([0 length(Bias_conv)+1],[5 5],'--k')
 

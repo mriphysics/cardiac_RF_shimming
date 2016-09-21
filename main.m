@@ -28,6 +28,12 @@ delta_1 = 0.538;    % delta_1 as defined in paper
 delta_2 = 0.4029;   % delta_2 as defined in paper
 t_enc = 1.7;        % Read-out duration (ms)
 
+% Allowed Power Properties
+A_amp = 2.5;        % Amplifier constant (W/uT^2)
+P_av = 100;         % Average power (W)
+P_peak = 1000;      % Peak power (W)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %% Scale fields and create ROI indices
 
 % Scale transmit field by flip angle
@@ -55,8 +61,8 @@ b1_act_scale = mean(abs(quad_map(idx_quad)))^2;
 
 % Configure variables for optimisation
 targmask = ones(length(idx),1);
-PA_optim = 5;
-A_tmpz = sum(A*PA_optim,2);
+PA_init = 5;
+A_tmpz = sum(A*PA_init,2);
 z = exp(1i*(angle(A_tmpz(idx))));
 counter = 0;
 Bias_conv = [];
@@ -72,17 +78,17 @@ opt_sel = questdlg('Select Optimization','Select Optimization',...
 switch opt_sel
 case 'MSE'
 tic
-options = optimset('Display','iter','MaxIter',inf,'tolfun',0.1,'tolx',0.1);
+options =optimset('Display','iter','MaxIter',inf,'tolfun',0.1,'tolx',0.01);
 [PA_shim,f_val] = fminsearch(@(PA_optim) optim_MSE(PA_optim,A,Amask,VOP,...
 QG,targmask,idx,b1_act_scale,Nc,t_enc,lSARmax,wbSARmax,delta_1,delta_2,...
-theta_targ),PA_optim,options);
+theta_targ,A_amp,P_av,P_peak),PA_init,options);
 toc
 case 'Minimum Bias'
 tic
-options = optimset('Display','iter','MaxIter',inf,'tolfun',0.1,'tolx',0.1);
+options =optimset('Display','iter','MaxIter',inf,'tolfun',0.1,'tolx',0.01);
 [PA_shim,f_val] = fminsearch(@(PA_optim) optim_minBias(PA_optim,A,Amask,...
 VOP,QG,targmask,idx,b1_act_scale,Nc,t_enc,lSARmax,wbSARmax,delta_1,...
-delta_2,theta_targ),PA_optim,options);
+delta_2,theta_targ,A_amp,P_av,P_peak),PA_init,options);
 toc
 end
 %%%%%%%%%%%%%%%%%%%%%%
@@ -102,7 +108,7 @@ shim = mls_shim;
 % load PAs_TRs_Durs
 PAs = 1:0.01:8; TRs = zeros(length(PAs),1);
 
-drmax_f = 20./PAs;
+drmax_f = (sqrt(P_peak/A_amp))./PAs;
 dravg_f = zeros(length(PAs),1); T_rms = zeros(length(PAs),1);
 
 parfor ii=1:length(PAs)
@@ -111,8 +117,8 @@ parfor ii=1:length(PAs)
                                                 delta_1,delta_2);
     TRs(ii) = max([rf_dur_i*2 rf_dur_i+t_enc]);
     
-    % Average Power limit for 100W and k constant of 2.25
-    dravg_f(ii) = sqrt(100*TRs(ii)/((PAs(ii).^2*T_rms(ii))*2.25));
+    % Average Power limit
+    dravg_f(ii) = sqrt(P_av*TRs(ii)/((PAs(ii).^2*T_rms(ii))*A_amp));
     
 end
 
