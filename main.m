@@ -18,9 +18,9 @@ Nc = size(tx,3);    % Number of coils
 nom = 60;           % Nominal flip angle (degrees)
 
 %%%%%%%%%%%%%%%%%%%%%%%% Parameters %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-t_enc = 1.7;        % Read-out duration (ms)
 lSARmax = 10;       % Local SAR constraint (W/kg)
 wbSARmax = 4;       % Whole-body SAR constraint (W/kg)
+t_enc = 1.7;        % Read-out duration (ms)
 
 
 %% Scale fields and create ROI indices
@@ -122,7 +122,8 @@ parfor ii=1:length(PAs)
 
     % Calculate Quad TR to conform to SAR limits
     Quad_SAR = Quad_Local_SAR*b1_act_scale_q(ii);
-    TR_new(ii)=round(Quad_SAR/10*TRs(ii)*100)/100;TR_unc(ii)=TR_new(ii);
+    TR_new(ii)=round(Quad_SAR/lSARmax*TRs(ii)*100)/100;
+    TR_unc(ii)=TR_new(ii);
     if TR_new(ii) < TRs(ii); TR_new(ii) = TRs(ii); end
     
     % Calculate Quadrature Error
