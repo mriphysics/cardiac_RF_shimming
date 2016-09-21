@@ -57,13 +57,14 @@ Amask = A(idx,:);
 
 %% CVX Solution
 
+% Scaling value to quadrature B1 produced
 b1_act_scale = mean(abs(quad_map(idx_quad)))^2;
 
-% Configure variables for optimisation
+% Configure and intitalise variables for optimisation
 targmask = ones(length(idx),1);
 PA_init = 5;
 A_tmpz = sum(A*PA_init,2);
-z = exp(1i*(angle(A_tmpz(idx))));
+z = exp(1i*(angle(A_tmpz(idx))));   % Intitalise target phase to quad phase
 counter = 0;
 Bias_conv = [];
 
@@ -74,7 +75,7 @@ save('z_tmp','z','counter','Bias_conv')
 opt_sel = questdlg('Select Optimization','Select Optimization',...
                 'MSE','Minimum Bias','MSE');
 
-%%% Run Two level Nested Optimisation
+%%% Run Two level Nested Optimisation - select either min bias or MSE
 switch opt_sel
 case 'MSE'
 tic
@@ -108,6 +109,7 @@ shim = mls_shim;
 % load PAs_TRs_Durs
 PAs = 1:0.01:8; TRs = zeros(length(PAs),1);
 
+% Peak power limit for quadrature
 drmax_f = (sqrt(P_peak/A_amp))./PAs;
 dravg_f = zeros(length(PAs),1); T_rms = zeros(length(PAs),1);
 
@@ -117,7 +119,7 @@ parfor ii=1:length(PAs)
                                                 delta_1,delta_2);
     TRs(ii) = max([rf_dur_i*2 rf_dur_i+t_enc]);
     
-    % Average Power limit
+    % Average Power limit for quadrature
     dravg_f(ii) = sqrt(P_av*TRs(ii)/((PAs(ii).^2*T_rms(ii))*A_amp));
     
 end
@@ -151,13 +153,9 @@ parfor ii=1:length(PAs)
     Quadrature_Var(ii) = var(abs(quad_map(idx)*PAs(ii))*Quad_PO_drive,1);
 end
 
-figure
-plot(TR_unc,PAs,'r','linewidth',2);hold on
-plot(TR_new,PAs,'linewidth',2); grid on; axis([0 12 1 12]);
-xlabel('TR (ms)'); ylabel('Pulse Amplitude (\muT)')
-
 %% Select Appropriate Quadrature operating point
 
+% Select minimum possible TR and corresponding solution index
 [TR_quad,ind_quad] = min(TR_new);
 
 b1_act_scale_quad = b1_act_scale_q(ind_quad)*TRs(ind_quad)/TR_quad;
