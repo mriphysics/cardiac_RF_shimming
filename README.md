@@ -9,4 +9,4 @@ The example script can then be run in MATLAB after CVX install by running `main.
 
 A citable version of release v2.2 is available: [![DOI](https://zenodo.org/badge/41297878.svg)](https://zenodo.org/badge/latestdoi/41297878)
 
-All B1+ and SSFP imaging data from the publication is available at [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.231228.svg)](https://doi.org/10.5281/zenodo.231228)
+All B<sub>1</sub><sup>+</sup> and SSFP imaging data from the publication is available at [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.231228.svg)](https://doi.org/10.5281/zenodo.231228)
