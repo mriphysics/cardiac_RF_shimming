@@ -7,6 +7,8 @@ To run this code, it is necessary to first download and install the [CVX version
 
 The example script can then be run in MATLAB after CVX install by running `main.m`. All necessary in-vivo and EM simulation data including VOPs and the global Q-matrix are stored in the `bin/` directory.
 
+### Releases and Data
+
 A citable version of release v2.2 is available: [![DOI](https://zenodo.org/badge/41297878.svg)](https://zenodo.org/badge/latestdoi/41297878)
 
 All B<sub>1</sub><sup>+</sup> and SSFP imaging data from the publication is available at: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.231228.svg)](https://doi.org/10.5281/zenodo.231228)
