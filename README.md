@@ -1,6 +1,6 @@
 # cardiac_RF_shimming
-### Constrained RF Shimming Code
-Contains code to compute SAR constrained RF shimming optimisation as outlined in a full paper published in 2017 (available [here](https://doi.org/10.1002/nbm.3701)). Currently this repo includes an example data set to compute shims for an in vivo cardiac experiment for a fixed RF pulse amplitude. Soon the full computation for variable RF pulse amplitudes will be added.
+### Extended RF Shimming Code
+Contains code to compute the extended constrained RF shimming optimisation as outlined in a full paper published in 2017 (available [here](https://doi.org/10.1002/nbm.3701)). This repo also includes an example data set to compute RF shims and optimised pulse amplitude and duration that obey all the relvant hardware and safety constraints for an in vivo cardiac experiment.
 
 ### Usage
 To run this code, it is necessary to first download and install the [CVX version 2.1](http://cvxr.com/cvx/) package from [here](http://cvxr.com/cvx/download/). The standard version contains a conflict when using Hermitian Q-matrices generated in MATLAB so after install, the `mtimes.m` file located in the CVX directory at cvx/builtins/@cvx must be replaced with the version in the `lib/` directory in this repository.
